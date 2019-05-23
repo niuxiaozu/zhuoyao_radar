@@ -95,7 +95,9 @@ export default {
       statusOK: false,
       yaolings: tempdata.Data,
       markers: [],
-      messageMap: new Map(), // 缓存请求类型和id
+      messageMap: new Map(), // 缓存请求和id
+      reqTimeoutMap: new Map(), // 请求超时重试列表
+      reqCountMap : new Map(),
       botMode: false,
       botInterval: null,
       botTime: 0,
@@ -142,7 +144,7 @@ export default {
     this.addStatus(`捉妖雷达Web版 <br/>
       版本:${APP_VERSION} <br/>
       更新日志:<br/>
-      虚拟定位 全家暴毙`);
+      虚拟定位 谨慎行驶`);
 
     this.$on('botSetup', params => {
       this.botSetup(params);

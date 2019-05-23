@@ -67,7 +67,7 @@ module.exports = {
       }
     },
     /**
-     * 缓存响应的类型和id
+     * 根据消息类型获取请求id
      */
     genRequestId(type) {
       let _time = new Date().getTime() % 1234567;
@@ -97,6 +97,11 @@ module.exports = {
           //console.log("妖灵等级", n), a.saveBossStartAndEndLevel(n.startlevel, n.endlevel);
           break;
         case '1001':
+          var timeout = this.reqTimeoutMap.get(`msg_${data.requestid}`);
+          if(timeout) {
+            console.log('清除timemout',timeout );
+            clearTimeout(timeout);//清除重试计时器
+          }
           console.log(
             '获取到妖灵数量',
             data.sprite_list ? data.sprite_list.length : 0

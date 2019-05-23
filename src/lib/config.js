@@ -32,6 +32,11 @@ const FILTER = {
       id: 2000238,
       name: '颜如玉',
       on: true
+    },
+    {
+      id:2000147,
+      name:'岩上喵',
+      on:true
     }
   ],
   FILTER_RARE: [
@@ -96,8 +101,8 @@ const FILTER = {
 };
 const SOCKET = {
   MAX_RECONNECT_TIME: 10, // 断线重连次数
-  MSG_INTERVAL: 3000, // 发送消息最小时间间隔
-  RECONNECT_TIMEOUT: 1000, // 断线重连时间
+  MSG_INTERVAL: 3500, // 发送消息最小时间间隔
+  RECONNECT_TIMEOUT: 2000, // 断线重连时间
   URL:
     'wss://publicld.gwgo.qq.com?account_value=0&account_type=1&appid=0&token=0' // 官方妖灵查询接口
 };
@@ -110,8 +115,8 @@ const BOT = {
 // MAX_RANGE: 以查询点为基准，范围查询的单元格数量
 // 例如MAX_RANGE=10。即是基准东南西北各+10，再加中心线，21*21的单元格数
 const WIDE_SEARCH = {
-  MAX_RANGE: 10, 
-  MAX_SOCKETS: 6, // 最大socket线程数
+  MAX_RANGE: 5, 
+  MAX_SOCKETS: 10, // 最大socket线程数
   LAT_RANGE: 0.013754, // 单次查询纬度偏移量
   LNG_RANGE: 0.01795 // 单词查询经度偏移量
 };

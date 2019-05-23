@@ -35,10 +35,10 @@ export default {
   position: fixed;
   z-index: 2000;
   margin: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  top: 5px;
+  left: 200px;
+  width: 30vw;
+  height: 10vh;
   .progress-bg {
     position: absolute;
     width: 100%;
@@ -47,7 +47,7 @@ export default {
   }
   .progress-content {
     position: absolute;
-    width: 300px;
+    width: 100%;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);

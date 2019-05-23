@@ -3,7 +3,7 @@
  * @Last Modified time: 2019-05-11 15:02:18
  * @Desc: mixins
  */
-
+import convert from '../lib/convert';
 module.exports = {
   methods: {
     exportPosition: function() {
@@ -99,6 +99,20 @@ module.exports = {
       });
 
       marker.setIcon(icon);
+      //添加位置信息
+      var info = new qq.maps.InfoWindow({
+        map: this.map
+      });
+      let lat=yl.latitude/ 1e6;
+      let lng=yl.longtitude/ 1e6;
+      convert.gcj02towgs84(lng,lat);
+      convert.gcj02tobd09(lng,lat);
+      qq.maps.event.addListener(marker, 'click', function() {
+        info.open();
+        info.setContent('<div style="text-align:center;white-space:nowrap;'+
+        'margin:5px;"><span>gcj02:</span>'+lat+',' + lng +'</div>');
+        info.setPosition(position);
+      });
       this.markers.push(marker);
 
       // 展示倒计时

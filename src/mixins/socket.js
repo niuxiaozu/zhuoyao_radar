@@ -30,6 +30,7 @@ module.exports = {
     /**
      * 发送消息
      */
+    
     sendMessage: function(message, socketIndex = 0) {
       console.log('sendMessage', message);
 
@@ -37,6 +38,25 @@ module.exports = {
       if (message.request_type != '1004') {
         this.addStatusWithoutNewline('WSS发送消息：');
         this.addStatus(JSON.stringify(message));
+      }
+      if(message.request_type=='1001'){//搜索时会有服务器不响应的情况，设置个超时重试吧 by_niuxz
+        var c = this.reqCountMap.get(message.requestid);
+        c=c?c:0;
+        console.log("请求id:"+message.requestid+"|"+(c+1));
+        this.reqCountMap.set(message.requestid,++c);
+        var timeoutobj = this.reqTimeoutMap.get(`msg_${message.requestid}`);
+        if(!timeoutobj){
+          timeoutobj={count:0};
+        }
+        if(timeoutobj.count<=3){
+          this.reqTimeoutMap.set(`msg_${message.requestid}`, {
+            count: ++timeoutobj.count,
+            timeout: setTimeout(()=>{
+              this.sendMessage(message,socketIndex);
+            },SOCKET.MSG_INTERVAL)
+          });
+        }
+        
       }
 
       this.sockets[socketIndex].send(json2buffer(message));
@@ -67,7 +87,6 @@ module.exports = {
           var n = utf8ByteToUnicodeStr(new Uint8Array(arrayBuffer).slice(4));
 
           var data = JSON.parse(n);
-
           console.log(`onSocketMessage${socket.index}`, data);
           this.handleMessage(data, socket);
         };

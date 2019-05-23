@@ -21,7 +21,7 @@
           <h4>捉妖雷达 - Web</h4>
           <p>{{ version }}</p>
           <p>捉妖雷达不会再有开发者群</p>
-          <p>虚拟定位全家暴毙</p>
+          <p>虚拟定位谨慎行驶</p>
           <br/>
           <iframe
             src="https://ghbtns.com/github-btn.html?user=liuzirui1122&repo=zhuoyao_radar&type=star&count=true&size=large"
