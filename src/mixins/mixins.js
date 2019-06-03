@@ -63,7 +63,7 @@ module.exports = {
       if (a) {
         return `https://hy.gwgo.qq.com/sync/pet/small/${a.ImgName}.png`;
       } else {
-        return './original/image/default-head.png';
+        return 'src/assets/images/default-head.png';
       }
     },
     /**
@@ -114,19 +114,34 @@ module.exports = {
           }
 
           if (this.mode === 'wide') {
-            let _position = this.getNextPosition(); // 获取下一个查询点
-
-            if (_position) {
+            if (socket.task) {
+              this.radarTask.finishTask(socket.task.taskIndex);
+            }
+            // let _position = this.getNextPosition(); // 获取下一个查询点
+            let _task = this.radarTask.getNextTask(); // 开始下一个任务
+            if (_task) {
+              socket.task = _task;
               setTimeout(() => {
                 this.sendMessage(
-                  this.initSocketMessage('1001', _position),
-                  socket.index
+                  this.initSocketMessage('1001', {
+                    longitude: _task.longitude,
+                    latitude: _task.latitude
+                  }),
+                  socket
                 );
-              }, SOCKET.MSG_INTERVAL);
+              }, Math.random() * 2000 + SOCKET.MSG_INTERVAL);
             } else {
-              this.progressShow = false;
+              delete socket.task;
+              if (this.radarTask && this.radarTask.isComplete()) {
+                this.progressShow = false;
+                this.searching = false;
+              }
             }
           } else {
+            if (socket.timeout) {
+              clearTimeout(socket.timeout);
+              socket.timeout = null;
+            }
             this.notify('筛选成功!');
           }
           break;

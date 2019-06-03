@@ -20,8 +20,9 @@
         <div class="side-header">
           <h4>捉妖雷达 - Web</h4>
           <p>{{ version }}</p>
-          <p>捉妖雷达不会再有开发者群</p>
-          <p>虚拟定位谨慎行驶</p>
+          <p><a href="http://note.youdao.com/noteshare?id=cf93745c828b381275f53e5a730eaf96" target="_blank">捉妖雷达开发贡献指引</a></p>
+          <br>
+          <p>虚拟定位谨慎开车</p>
           <br/>
           <iframe
             src="https://ghbtns.com/github-btn.html?user=liuzirui1122&repo=zhuoyao_radar&type=star&count=true&size=large"
@@ -33,41 +34,50 @@
         </div>
         <div class="side-content">
           <div class="nav-filter">
-            <div class="header">筛选</div>
-            <ul v-if="mode === 'normal'">
-              <template v-for="item in filters">
-                <li :key="item.key">
-                  <span class="tag">{{item.text}}</span>
-                  <el-switch v-model="settings.fit[item.key]"> </el-switch>
-                </li>
-              </template>
-            </ul>
-            <ul v-else>
-              <template v-for="item in settings.wide">
-                <li :key="item.id">
-                  <span class="tag">{{item.name}}</span>
-                  <el-switch v-model="item.on"> </el-switch>
-                </li>
-              </template>
-            </ul>
-          </div>
-          <div class="hr"></div>
-          <div class="nav-settings">
-            <div class="header">设置</div>
-            <ul>
-              <li>
-                <span class="tag">点击地图自动搜索</span>
-                <el-switch v-model="settings.auto_search"> </el-switch>
-              </li>
-              <li>
-                <span class="tag">显示剩余时间</span>
-                <el-switch v-model="settings.show_time"> </el-switch>
-              </li>
-              <li>
-                <span class="tag">记住上次退出位置</span>
-                <el-switch v-model="settings.position_sync"> </el-switch>
-              </li>
-            </ul>
+            <el-collapse v-model="activeName" accordion>
+              <el-collapse-item :title="'筛选'+(settings.use_custom?'(已启用自定义)':'')" name="1">
+                <ul v-if="mode === 'normal'">
+                  <template v-for="item in filters">
+                    <li :key="item.key">
+                      <span class="tag">{{item.text}}</span>
+                      <el-switch v-model="settings.fit[item.key]" :disabled="settings.use_custom"> </el-switch>
+                    </li>
+                  </template>
+                </ul>
+                <ul v-else>
+                  <template v-for="item in settings.wide">
+                    <li :key="item.id">
+                      <span class="tag">{{item.name}}</span>
+                      <el-switch v-model="item.on" :disabled="settings.use_custom"> </el-switch>
+                    </li>
+                  </template>
+                </ul>
+              </el-collapse-item>
+              <el-collapse-item title="设置" name="2">
+                <ul>
+                  <li>
+                    <span class="tag">启用自定义筛选</span>
+                    <el-switch v-model="settings.use_custom"> </el-switch>
+                  </li>
+                  <li>
+                    <span class="tag">点击地图自动搜索</span>
+                    <el-switch v-model="settings.auto_search"> </el-switch>
+                  </li>
+                  <li>
+                    <span class="tag">显示剩余时间</span>
+                    <el-switch v-model="settings.show_time"> </el-switch>
+                  </li>
+                  <li>
+                    <span class="tag">记住上次退出位置</span>
+                    <el-switch v-model="settings.position_sync"> </el-switch>
+                  </li>
+                  <li>
+                    <span class="tag">显示搜索范围</span>
+                    <el-switch v-model="settings.show_box"> </el-switch>
+                  </li>
+                </ul>
+              </el-collapse-item>
+            </el-collapse>
           </div>
         </div>
       </div>
@@ -99,6 +109,7 @@ export default {
   },
   data() {
     return {
+      activeName: '1',
       filters: [
         {
           text: '稀有',
@@ -121,6 +132,10 @@ export default {
           key: 'feature'
         },
         {
+          text: '鬼鬼',
+          key: 'ghost'
+        },
+        {
           text: '鲲鲲',
           key: 'fish'
         },
@@ -131,7 +146,7 @@ export default {
         {
           text: '其他所有（慎选）',
           key: 'all'
-        }
+        },
       ]
     };
   },
@@ -152,6 +167,9 @@ export default {
     padding-left: 10px;
     padding-top: 5px;
   }
+}
+.nav-filter{
+  padding: 0 10px;
 }
 // .el-tabs__item {
 //   padding: 0 20px !important;

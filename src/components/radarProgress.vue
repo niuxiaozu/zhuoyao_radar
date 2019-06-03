@@ -1,12 +1,12 @@
 <template>
-  <div id="radar-progress" v-show="show">
+  <!-- <div id="radar-progress" v-show="show">
     <div class="progress-bg"></div>
-    <div class="progress-content">
+  </div> -->
+    <div v-show="show" class="progress-content">
+      <p>大范围搜索速度较慢，请耐心等待...</p>
       <el-progress :text-inside="true" :stroke-width="16" :percentage="percent"></el-progress>
-      大范围搜索速度较慢，请耐心等待...<br/>
-      当前线程数{{ thread }},最大搜索范围{{ maxRange }}*{{ maxRange }}个单元。
+      <!-- 当前线程数{{ thread }},最大搜索范围{{ maxRange }}*{{ maxRange }}个单元。 -->
     </div>
-  </div>
 </template>
 <script>
 export default {

@@ -4,24 +4,31 @@
  * @Desc: mixins
  */
 import convert from '../lib/convert';
+
+import { setLocalStorage } from '../lib/util';
+import {
+  MAP_PARAMS,
+  WIDE_SEARCH
+} from '../lib/config';
+
 module.exports = {
   methods: {
-    exportPosition: function() {
-      var pos = this.$prompt('请输入标签', '缓存位置', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        inputValidator: value => {
-          if (value.length == 0) return '请输入标签';
-          return true;
-        }
-      }).then(({ value }) => {
-        this.$message({
-          type: 'success',
-          message: '你的邮箱是: ' + value
-        });
-      });
-    },
-    importPosition: function() {},
+    // exportPosition: function() {
+    //   var pos = this.$prompt('请输入标签', '缓存位置', {
+    //     confirmButtonText: '确定',
+    //     cancelButtonText: '取消',
+    //     inputValidator: value => {
+    //       if (value.length == 0) return '请输入标签';
+    //       return true;
+    //     }
+    //   }).then(({ value }) => {
+    //     this.$message({
+    //       type: 'success',
+    //       message: '你的邮箱是: ' + value
+    //     });
+    //   });
+    // },
+    // importPosition: function() {},
     /**
      * 初始化地图
      */
@@ -31,6 +38,13 @@ module.exports = {
           this.location.latitude,
           this.location.longitude
         ),
+        zoomControl: false,
+        panControl: false,
+        zoomControl: false,
+        scaleControl: false,
+        mapTypeControl: false,
+        scrollwheel: true,
+        draggable: true,
         zoom: 16 // 地图的中心地理坐标。
       });
 
@@ -45,11 +59,14 @@ module.exports = {
      * 地图点击事件
      */
     clickMap(e) {
-      this.notify('位置已重置,请重新筛选');
+      if (this.mode === 'wide' && this.searching) {
+        return false;
+      }
+      if (!this.settings.auto_search) this.notify('位置已重置,请重新筛选');
       this.location.longitude = e.latLng.lng;
       this.location.latitude = e.latLng.lat;
       var icon = new qq.maps.MarkerImage(
-        'original/image/icon/notify-arrow.png',
+        'src/assets/images/notify-arrow.png',
         null,
         null,
         null,
@@ -95,7 +112,9 @@ module.exports = {
       let position = new qq.maps.LatLng(yl.latitude / 1e6, yl.longtitude / 1e6);
       let marker = new qq.maps.Marker({
         position: position,
-        map: this.map
+        map: this.map,
+        zIndex:20000,
+        clickable:false,
       });
 
       marker.setIcon(icon);
@@ -125,10 +144,57 @@ module.exports = {
           style: {
             border: 'none',
             backgroundColor: 'rgba(255,255,255,.7)'
-          }
+          },
+          zIndex:22000,
         });
         this.markers.push(labelMarker);
       }
+    },
+    buildSearchboxMarker(lat,lng,showOuter) {
+      if (!this.settings.show_box) return;
+      
+      if (showOuter) {
+        let outerPath = [
+          new qq.maps.LatLng(lat-WIDE_SEARCH.LAT_RANGE,lng-WIDE_SEARCH.LNG_RANGE),
+          new qq.maps.LatLng(lat-WIDE_SEARCH.LAT_RANGE,lng+WIDE_SEARCH.LNG_RANGE),
+          new qq.maps.LatLng(lat+WIDE_SEARCH.LAT_RANGE,lng+WIDE_SEARCH.LNG_RANGE),
+          new qq.maps.LatLng(lat+WIDE_SEARCH.LAT_RANGE,lng-WIDE_SEARCH.LNG_RANGE),
+        ];
+        this.searchOutboxMarker = new qq.maps.Polygon({
+          map:this.map,
+          path:outerPath,
+          clickable:false,
+          strokeColor:MAP_PARAMS.OUTBOX_STROKE,
+          strokeWeight:MAP_PARAMS.OUTBOX_WIDTH,
+          fillColor:MAP_PARAMS.OUTBOX_FILL,
+          zIndex:7000,
+        });
+      } else {
+        let key = lat.toString()+lng.toString();
+        if (this.searchBoxWideSet.has(key)) return;
+        this.searchBoxWideSet.add(key);
+      }
+
+      let path = [
+        new qq.maps.LatLng(lat-WIDE_SEARCH.LAT_RANGE/2,lng-WIDE_SEARCH.LNG_RANGE/2),
+        new qq.maps.LatLng(lat-WIDE_SEARCH.LAT_RANGE/2,lng+WIDE_SEARCH.LNG_RANGE/2),
+        new qq.maps.LatLng(lat+WIDE_SEARCH.LAT_RANGE/2,lng+WIDE_SEARCH.LNG_RANGE/2),
+        new qq.maps.LatLng(lat+WIDE_SEARCH.LAT_RANGE/2,lng-WIDE_SEARCH.LNG_RANGE/2),
+      ];
+      this.searchBoxMarker.push(new qq.maps.Polygon({
+        map:this.map,
+        path:path,
+        clickable:false,
+        strokeColor:MAP_PARAMS.BOX_STROKE,
+        strokeWeight:MAP_PARAMS.BOX_WIDTH,
+        fillColor:MAP_PARAMS.BOX_FILL,
+        zIndex:6000,
+      }));
+
+      
+
+      
+
     },
     /**
      * 清除标记
@@ -138,6 +204,37 @@ module.exports = {
         this.markers[i].setMap(null);
       }
       this.markers = [];
+    },
+    /**
+     * 清除搜索框
+     */
+    clearAllBox() {
+      for (var i = 0; i < this.searchBoxMarker.length; i++) {
+        this.searchBoxMarker[i].setMap(null);
+      }
+      this.searchBoxMarker = [];
+      this.searchBoxWideSet.clear();
+    },
+    /**
+     * 搜索框出问题
+     */
+    boxError() {
+      if (this.searchBoxMarker.length == 1) {
+        this.searchBoxMarker[0].setOptions({
+          fillColor:MAP_PARAMS.ERROR_FILL,
+          strokeColor:MAP_PARAMS.ERROR_STROKE,
+        });
+      }
+    },
+    /**
+     * 地图中心改变
+     */
+    mapCenterChanged(position) {
+      var c = this.map.getCenter();
+      setLocalStorage('radar_location', {
+        longitude: c.lng,
+        latitude: c.lat
+      });
     }
   }
 };

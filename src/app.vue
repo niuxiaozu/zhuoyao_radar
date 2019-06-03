@@ -8,22 +8,48 @@
     </div>
     <div id="buttons">
       <el-button size="mini" @click="getYaolingInfo">妖灵</el-button>
-      <!-- <el-button size="mini" @click="exportPosition">导出位置</el-button>
-      <el-button size="mini" @click="importPosition">导入位置</el-button> -->
+      <el-button size="mini" @click="filterDialogVisible = true">自定义筛选</el-button>
       <el-button size="mini" type="warning" @click="debug = !debug">Debug</el-button>
+      <div v-if="mode === 'wide'">
+        <div style="font-size: 14px;">
+          <div>当前线程数: {{sockets.length}}/{{thread}}</div>
+          <template v-for="(socket, index) in sockets" >
+            <p :key="index" v-if="socket">线程.{{index+1}} {{socket.task ? `正在执行任务.${socket.task.taskIndex}` : '空闲'}}</p>
+          </template>  
+          <div v-if="radarTask">任务进度:{{closedTask}}/{{radarTask.tasks.length}}</div>
+        </div>
+      </div>
     </div>
     <div id="qmap"></div>
     <radar-progress :show="progressShow" :max-range="max_range" :thread="thread" :percent="progressPercent"></radar-progress>
+    <el-dialog
+    title="自定义筛选"
+    :visible.sync="filterDialogVisible"
+    class="filter-dialog">
+    <div class="check">
+      <el-checkbox v-model="settings.use_custom">启用</el-checkbox>
+    </div>
+    <el-row :gutter="10" class="filter-list">
+      <el-col v-for="(yl, index) in settings.custom_filter" :key="index" :xs="12" :sm="8" :md="6" :lg="4" :xl="3">
+        <div class="filter-content" :class="{active : yl.on}" @click="yl.on = !yl.on">
+          <img :src="'https://hy.gwgo.qq.com/sync/pet/'+yl.img" :alt="yl.name">
+          <span :class="{active:up(yl.id)}">{{ yl.name }}</span>
+        </div>
+      </el-col>
+    </el-row>
+  </el-dialog>
   </div>
 </template>
 <script>
 import tempdata from './lib/tempdata';
+import activities from './lib/activities';
 import mixins from './mixins/mixins';
 import bot from './mixins/bot';
 import map from './mixins/map';
 import RightNav from './components/rightNav';
 import socket from './mixins/socket';
 import RadarProgress from './components/radarProgress';
+import RadarTasks from './lib/RadarTasks';
 
 import { getLocalStorage, setLocalStorage } from './lib/util';
 
@@ -55,18 +81,52 @@ export default {
         rare: true,
         fish: false,
         feature: false,
-        element: false
+        element: false,
       },
-      auto_search: false,
+      auto_search: true,
       show_time: true,
-      position_sync: true,
-      wide: FILTER.FILTER_WIDE
+      position_sync: false,
+      wide: FILTER.FILTER_WIDE,
+      custom_filter:FILTER.FILTER_CUSTOM,
+      use_custom:false,
+      show_box:false,
+      version:APP_VERSION,
     };
+
+
+    let flag = false;
+    let ans = [];
+
+    //如果第一次打开网页 则打开菜单
     if (!settings) {
       showMenu = true;
+    } else {
+      //对于settings.custom_filter
+      //在版本更新后availableYaolings发生变动时，custom_filter会保留以前的键
+      //因此需要在此处做一个remapping
+      
+      if (settings.custom_filter) {
+        let sc = settings.custom_filter;
+        let scMap = [];
+        sc.forEach(o => {
+          scMap[o.Id] = o;
+        });
+        defaultSettings.custom_filter.forEach((v,i,a) => {
+          if (scMap.hasOwnProperty(v.id)) ans.push(scMap[v.id]);
+          else ans.push(v);
+        });
+      }
     }
+    
     settings = Object.assign({}, defaultSettings, settings || {});
 
+    if (flag) {
+      settings.custom_filter = ans;
+    }
+
+    
+    
+    
     if (!(location && settings.position_sync)) {
       location = {
         longitude: 116.3579177856,
@@ -75,25 +135,36 @@ export default {
     }
     let range = Number(this.$parent.range || WIDE_SEARCH.MAX_RANGE);
     let max_range = range * 2 + 1; // 经纬方向单元格最大数
+    // 线程数最多6个
+    let thread = Math.min(
+      Number(this.$parent.thread || WIDE_SEARCH.MAX_SOCKETS),
+      6
+    );
     return {
       location,
       settings,
       showMenu,
       APP_VERSION,
       range,
+      thread,
       max_range,
       mode: this.$parent.mode,
       status: '',
-      sockets: [],
-      thread: Number(this.$parent.thread || WIDE_SEARCH.MAX_SOCKETS),
+      sockets: new Array(thread),
+      radarTask: null,
+      searching: false,
       map: {},
       debug: false,
       clickMarker: null, // 点击位置标记
       userMarker: null, // 用户位置标记
+      searchBoxMarker: [], //大范围搜索框标记
+      searchBoxWideSet: new Set(), //大范围搜索集合
+      searchOutboxMarker: null, //外围指引框标记
       firstTime: true, // 首次连接socket标记
       currVersion: CUR_YAOLING_VERSION, //190508版本的json 如果有变动手动更新
       statusOK: false,
       yaolings: tempdata.Data,
+      upYaolings: activities.Data,
       markers: [],
       messageMap: new Map(), // 缓存请求和id
       reqTimeoutMap: new Map(), // 请求超时重试列表
@@ -101,14 +172,15 @@ export default {
       botMode: false,
       botInterval: null,
       botTime: 0,
-      botGroup: '799576270',
+      botGroup: '群号',
       botChecked: [],
       botWelcomeInfo: '捉妖扫描机器人2.1启动~有什么问题可以@我哦',
       botLocation: {
         longitude: 116.3579177856,
         latitude: 39.9610780334
       },
-      progressShow: false
+      progressShow: false,
+      filterDialogVisible:false
     };
   },
   mounted() {
@@ -137,6 +209,9 @@ export default {
         },
         e => {
           console.log(e);
+          if (e.code === 3) {
+            this.notify('无法获取设备位置信息');
+          }
         }
       )
       .catch(b => {});
@@ -144,14 +219,19 @@ export default {
     this.addStatus(`捉妖雷达Web版 <br/>
       版本:${APP_VERSION} <br/>
       更新日志:<br/>
-      虚拟定位 谨慎行驶`);
+      加入搜索范围显示选项<br/>`);
 
     this.$on('botSetup', params => {
       this.botSetup(params);
     });
 
     if (this.mode === 'wide') {
-      this.notify(`大范围搜索开启，当前最大搜索单位:${Math.pow(this.max_range, 2)}个.线程数:${this.thread}个.`)
+      this.notify(
+        `大范围搜索开启，当前最大搜索单位:${Math.pow(
+          this.max_range,
+          2
+        )}个.线程数:${this.thread}个.`
+      );
     }
   },
   methods: {
@@ -204,13 +284,37 @@ export default {
       this.clearAllMarkers();
 
       if (this.mode === 'normal') {
+        if (this.searchOutboxMarker != null) this.searchOutboxMarker.setMap(null);
+        if (this.searchBoxMarker.length > 0) {
+          this.searchBoxMarker[0].setMap(null);
+          this.searchBoxMarker.pop();
+        }
+
+        this.buildSearchboxMarker(this.location.latitude,this.location.longitude,true);
         this.sendMessage(this.initSocketMessage('1001'));
       } else {
+        if (this.searching) {
+          this.notify("请等待此次搜索结束！");
+          return false;
+        }
+
+        this.clearAllBox();
+
+        this.radarTask = new RadarTasks({
+          range: this.range,
+          lng: this.location.longitude,
+          lat: this.location.latitude
+        });
+
+        
         this.progressShow = true;
         this.lng_count = this.lat_count = 0;
+        this.searching = true;
         for (let index = 0; index < WIDE_SEARCH.MAX_SOCKETS; index++) {
-          let _position = this.getNextPosition(); // 获取下一个查询点
-          this.sendMessage(this.initSocketMessage('1001', _position), index);
+          let socket = this.sockets[index];
+          if (socket) {
+            this.startTaskWithSocket(socket);
+          }
         }
       }
     },
@@ -238,24 +342,32 @@ export default {
       this.sendMessage(this.initSocketMessage('10040'));
     },
     /**
-     * 地图中心改变
+     * 是否为活动up妖灵
      */
-    mapCenterChanged(position) {
-      var c = this.map.getCenter();
-      setLocalStorage('radar_location', {
-        longitude: c.lng,
-        latitude: c.lat
-      });
+    up:function(val) {
+      return this.upYaolings.hasOwnProperty(val) && this.upYaolings[val] ;
     }
   },
   computed: {
     fit: function() {
       let ans = [];
+
+      //自定义筛选优先级最高
+      if (this.settings.use_custom) {
+        return Array.from(new Set(
+          this.settings.custom_filter
+          .filter(item => item.on)
+          .map(item => item.id)
+        ));
+      }
+
       if (this.mode === 'normal') {
+        
         let _fit = this.settings.fit;
         if (_fit.all) {
           return ['special'];
         }
+        
 
         // 根据值把key转换成FILTER_FISH这种，取常量配置中的值
         for (let _f in _fit) {
@@ -276,9 +388,29 @@ export default {
      * 大范围进度条
      */
     progressPercent: function() {
-      let cur = this.lat_count * this.max_range + this.lng_count;
-      return Math.floor(cur / Math.pow(this.max_range, 2) * 100);
-    }
+      let result = 0;
+      if (this.radarTask) {
+        let tasks = this.radarTask.tasks;
+        let _close = tasks.filter(i => {
+          return i.status === 'close';
+        }).length;
+        result = Math.floor(_close / tasks.length * 100);
+      }
+      // let _open = tasks.length
+      return result;
+    },
+    /**
+     * 已完成任务数
+     */
+    closedTask: function() {
+      let result = 0;
+      if (this.radarTask) {
+        result = this.radarTask.tasks.filter(i => {
+          return i.status === 'close';
+        }).length;
+      }
+      return result;
+    },
   },
   watch: {
     settings: {
@@ -292,5 +424,10 @@ export default {
 };
 </script>
 <style lang='less'>
+#app {
+  // padding-left: 200px;
+  position: relative;
+  height: 100%;
+}
 </style>
 
