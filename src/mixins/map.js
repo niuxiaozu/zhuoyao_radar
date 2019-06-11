@@ -114,9 +114,8 @@ module.exports = {
         position: position,
         map: this.map,
         zIndex:20000,
-        clickable:false,
+        clickable:true,
       });
-
       marker.setIcon(icon);
       //添加位置信息
       var info = new qq.maps.InfoWindow({
@@ -124,12 +123,15 @@ module.exports = {
       });
       let lat=yl.latitude/ 1e6;
       let lng=yl.longtitude/ 1e6;
-      convert.gcj02towgs84(lng,lat);
-      convert.gcj02tobd09(lng,lat);
+      let wgs84arr = convert.gcj02towgs84(lng,lat);
+      let bd09arr = convert.gcj02tobd09(lng,lat);
       qq.maps.event.addListener(marker, 'click', function() {
         info.open();
-        info.setContent('<div style="text-align:center;white-space:nowrap;'+
-        'margin:5px;"><span>gcj02:</span>'+lat+',' + lng +'</div>');
+        info.setContent('<table style="text-align:left;white-space:nowrap;margin:5px;">'
+        +'<tr><td >gcj02:</td><td>'+lng+',' + lat+'</td></tr>'
+        +'<tr><td >wgs84:</td><td>'+wgs84arr[0].toFixed(6)+',' + wgs84arr[1].toFixed(6)+'</td></tr>'
+        +'<tr><td >bd09:</td><td>'+bd09arr[0].toFixed(6)+',' + bd09arr[1].toFixed(6)+'</td></tr>'
+        +'</table>');
         info.setPosition(position);
       });
       this.markers.push(marker);

@@ -167,8 +167,6 @@ export default {
       upYaolings: activities.Data,
       markers: [],
       messageMap: new Map(), // 缓存请求和id
-      reqTimeoutMap: new Map(), // 请求超时重试列表
-      reqCountMap : new Map(),
       botMode: false,
       botInterval: null,
       botTime: 0,

@@ -35,26 +35,25 @@ export default {
   position: fixed;
   z-index: 2000;
   margin: 0;
-  top: 5px;
-  left: 200px;
-  width: 30vw;
-  height: 10vh;
   .progress-bg {
     position: absolute;
     width: 100%;
     height: 100%;
     background-color: rgba(255, 255, 255, 0.5);
   }
+}
   .progress-content {
     position: absolute;
-    width: 100%;
+    width: 300px;
     left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    top: 10px;
+    transform: translate(-50%, 0);
     text-align: center;
     font-size: 14px;
+    padding: 10px 30px;
+    background-color: rgba(255,255,255,.8);
+    border-radius: 10px;
   }
-}
 </style>
 
 
