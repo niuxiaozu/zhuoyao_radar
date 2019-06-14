@@ -123,14 +123,14 @@ module.exports = {
       });
       let lat=yl.latitude/ 1e6;
       let lng=yl.longtitude/ 1e6;
-      let wgs84arr = convert.gcj02towgs84(lng,lat);
-      let bd09arr = convert.gcj02tobd09(lng,lat);
+      let wgs84arr = convert.gcj_decrypt_exact(lat,lng);
+      let bd09arr = convert.bd_encrypt(lat,lng);
       qq.maps.event.addListener(marker, 'click', function() {
         info.open();
         info.setContent('<table style="text-align:left;white-space:nowrap;margin:5px;">'
         +'<tr><td >gcj02:</td><td>'+lng+',' + lat+'</td></tr>'
-        +'<tr><td >wgs84:</td><td>'+wgs84arr[0].toFixed(6)+',' + wgs84arr[1].toFixed(6)+'</td></tr>'
-        +'<tr><td >bd09:</td><td>'+bd09arr[0].toFixed(6)+',' + bd09arr[1].toFixed(6)+'</td></tr>'
+        +'<tr><td >wgs84:</td><td>'+wgs84arr.lon.toFixed(6)+',' + wgs84arr.lat.toFixed(6)+'</td></tr>'
+        +'<tr><td >bd09:</td><td>'+bd09arr.lon.toFixed(6)+',' + bd09arr.lat.toFixed(6)+'</td></tr>'
         +'</table>');
         info.setPosition(position);
       });
