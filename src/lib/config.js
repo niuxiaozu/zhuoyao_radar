@@ -1,10 +1,10 @@
 import tempdata from './tempdata';
 import availableYaolings from './availableYaolings';
 
-const CUR_YAOLING_VERSION = 'sprite_736ccf43e1837de040108c29c00019d0.json'; // 妖灵数据库版本，如果与官方版本不一致，需要手动更新
-//本地妖灵数据库更新时间:"2019-05-25 13:09:00"
+const CUR_YAOLING_VERSION = 'sprite_18b3306a1d7dda37b41d2d458e00a0a8.json'; // 妖灵数据库版本，如果与官方版本不一致，需要手动更新
+//本地妖灵数据库更新时间:"2019-06-14 08:09:00"
 
-const APP_VERSION = 'v1.5.0'; // 地图版本
+const APP_VERSION = 'v1.5.1'; // 地图版本
 const API_KEY = '2LWBZ-FEQK6-KKYS2-M6WR4-PFGS5-RZBP3'; // 地图 api key
 
 let dataMap = [];
@@ -22,6 +22,11 @@ const FILTER = {
     {
       id: 2000313,
       name: '银角小妖',
+      on: true
+    },
+    {
+      id: 2000316,
+      name: '金角小妖',
       on: true
     },
     {
@@ -48,21 +53,23 @@ const FILTER = {
   FILTER_RARE: [
     2000106, // 风雪虎
     2000313, // 银角小妖
+    2000316, //金角小妖
     2000327, // 小蝙蝠
     2000265, // 香玉
     2000238, // 颜如玉
     2000109, // 螺莉莉
-    //2000078, // 布鲁 大量出现
     2000028, //小蝌蚪
-    //2000191, // 麻将仔 大量出现
+    2000419, //花火羊
     2000242, // 夜行枭
-    2000147, // 檐上喵
-    2000188 // CoCo熊   todo: 檐上喵&CoCo熊官方雷达貌似不提供搜索
+    // 2000147, // 檐上喵 现在满大街
+    // 2000188 // CoCo熊 现在满大街
   ],
   FILTER_NEST: [
     2000321, // 木偶娃娃
     2000324, // 瓷偶娃娃
-    2000112 // 雷童子
+    2000112, // 雷童子
+    2000413, //兜兜犴
+    2000416, //淘奇蛇
   ],
   FILTER_FEATURE: [
     2004013, // 暴走小龙虾

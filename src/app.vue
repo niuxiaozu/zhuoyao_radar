@@ -109,12 +109,13 @@ export default {
         let sc = settings.custom_filter;
         let scMap = [];
         sc.forEach(o => {
-          scMap[o.Id] = o;
+          scMap[o.id] = o;
         });
         defaultSettings.custom_filter.forEach((v,i,a) => {
           if (scMap.hasOwnProperty(v.id)) ans.push(scMap[v.id]);
           else ans.push(v);
         });
+        flag = true;
       }
     }
     
@@ -125,12 +126,11 @@ export default {
     }
 
     
-    
-    
     if (!(location && settings.position_sync)) {
       location = {
         longitude: 116.3579177856,
-        latitude: 39.9610780334
+        latitude: 39.9610780334,
+        zoom:16,
       };
     }
     let range = Number(this.$parent.range || WIDE_SEARCH.MAX_RANGE);
@@ -189,35 +189,37 @@ export default {
     this.initSockets();
 
     // 获取用户位置
-    this.getLocation()
-      .then(
-        position => {
-          this.location.longitude = position.longitude;
-          this.location.latitude = position.latitude;
+    if (!this.settings.position_sync) {
+      this.getLocation()
+        .then(
+          position => {
+            this.location.longitude = position.longitude;
+            this.location.latitude = position.latitude;
 
-          var pos = new qq.maps.LatLng(
-            this.location.latitude,
-            this.location.longitude
-          );
-          this.map.panTo(pos);
-          this.userMarker = new qq.maps.Marker({
-            position: pos,
-            map: this.map
-          });
-        },
-        e => {
-          console.log(e);
-          if (e.code === 3) {
-            this.notify('无法获取设备位置信息');
+            var pos = new qq.maps.LatLng(
+              this.location.latitude,
+              this.location.longitude
+            );
+            this.map.panTo(pos);
+            this.userMarker = new qq.maps.Marker({
+              position: pos,
+              map: this.map
+            });
+          },
+          e => {
+            console.log(e);
+            if (e.code === 3) {
+              this.notify('无法获取设备位置信息');
+            }
           }
-        }
-      )
-      .catch(b => {});
+        )
+        .catch(b => {});
+    }
 
     this.addStatus(`捉妖雷达Web版 <br/>
       版本:${APP_VERSION} <br/>
       更新日志:<br/>
-      加入搜索范围显示选项<br/>`);
+      加入新版本活动妖灵<br/>`);
 
     this.$on('botSetup', params => {
       this.botSetup(params);
