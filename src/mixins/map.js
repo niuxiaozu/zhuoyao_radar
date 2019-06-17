@@ -6,6 +6,7 @@
 import convert from '../lib/convert';
 
 import { setLocalStorage } from '../lib/util';
+import RadarMapMarker from '../lib/RadarMapMarker';
 import {
   MAP_PARAMS,
   WIDE_SEARCH
@@ -44,7 +45,7 @@ module.exports = {
      * 地图点击事件
      */
     clickMap(e) {
-      if (this.mode === 'wide' && this.searching) {
+      if ((this.mode === 'wide' || this.mode === 'temp') && this.searching) {
         return false;
       }
       if (!this.settings.auto_search) this.notify('位置已重置,请重新筛选');
@@ -77,12 +78,17 @@ module.exports = {
      * 根据妖灵信息在地图上打个标记
      */
     addMarkers(yl) {
+
+      var key = window.md5(yl.gentime.toString()+yl.latitude.toString()+yl.longtitude.toString());
+
+      if (this.markers.has(key)) return; //重复妖灵不添加
+
       let headImage = this.getHeadImagePath(yl);
 
       var time = new Date((yl.gentime + yl.lifetime) * 1000) - new Date();
       var second = time / 1000;
       var minute = Math.floor(second / 60);
-      var second = Math.floor(second % 60);
+      second = Math.floor(second % 60);
 
       var fintime = minute + '分' + second + '秒';
 
@@ -102,6 +108,14 @@ module.exports = {
         clickable:true,
       });
       marker.setIcon(icon);
+      
+      let markeropts = {
+        marker:marker,
+        laberMarker:null,
+        lnglatInfo:null,
+        time:new Date((yl.gentime + yl.lifetime) * 1000),
+      };
+      
       //添加位置信息
       var info = new qq.maps.InfoWindow({
         map: this.map
@@ -119,7 +133,7 @@ module.exports = {
         +'</table>');
         info.setPosition(position);
       });
-      this.markers.push(marker);
+      markeropts.lnglatInfo = info;
 
       // 展示倒计时
       if (this.settings.show_time) {
@@ -134,8 +148,10 @@ module.exports = {
           },
           zIndex:22000,
         });
-        this.markers.push(labelMarker);
+        markeropts.labelMarker = labelMarker;
       }
+
+      this.markers[key] = new RadarMapMarker(markeropts);
     },
     buildSearchboxMarker(lat,lng,showOuter) {
       if (!this.settings.show_box) return;
@@ -177,20 +193,15 @@ module.exports = {
         fillColor:MAP_PARAMS.BOX_FILL,
         zIndex:6000,
       }));
-
-      
-
-      
-
     },
     /**
      * 清除标记
      */
     clearAllMarkers() {
-      for (var i = 0; i < this.markers.length; i++) {
-        this.markers[i].setMap(null);
+      for (var key in this.markers) {
+        this.markers[key].clear();
       }
-      this.markers = [];
+      this.markers.clear();
     },
     /**
      * 清除搜索框

@@ -20,17 +20,17 @@ const prodConfig = merge(baseWebpackConfig, {
       }
     }),
 
-    new UglifyJSPlugin({
-      uglifyOptions: {
-        compress: {
-          drop_console: false,
-          reduce_funcs: false
-        }
-      },
-      cache: true,
-      parallel: os.cpus().length,
-      sourceMap: false
-    }),
+    // new UglifyJSPlugin({
+    //   uglifyOptions: {
+    //     compress: {
+    //       drop_console: false,
+    //       reduce_funcs: false
+    //     }
+    //   },
+    //   cache: true,
+    //   parallel: os.cpus().length,
+    //   sourceMap: true
+    // }),
 
     new MiniCssExtractPlugin({
       filename: `[name].[contenthash:8].css`

@@ -3,13 +3,9 @@
     <right-nav :version="APP_VERSION" :settings="settings" :show-menu.sync="showMenu" :mode="mode"></right-nav>
     <!-- <normal-nav :version="APP_VERSION" :settings="settings" :show-menu="showMenu"></normal-nav> -->
 
-    <div id="status" v-show="debug">
-      <div id="info"><br/><span v-html="status"></span></div>
-    </div>
     <div id="buttons">
       <el-button size="mini" @click="getYaolingInfo">妖灵</el-button>
       <el-button size="mini" @click="filterDialogVisible = true">自定义筛选</el-button>
-      <el-button size="mini" type="warning" @click="debug = !debug">Debug</el-button>
       <div v-if="mode === 'wide'">
         <div style="font-size: 14px;">
           <div>当前线程数: {{sockets.length}}/{{thread}}</div>
@@ -133,6 +129,7 @@ export default {
         zoom:16,
       };
     }
+
     let range = Number(this.$parent.range || WIDE_SEARCH.MAX_RANGE);
     let max_range = range * 2 + 1; // 经纬方向单元格最大数
     // 线程数最多6个
@@ -140,6 +137,10 @@ export default {
       Number(this.$parent.thread || WIDE_SEARCH.MAX_SOCKETS),
       6
     );
+    if (this.$parent.mode === 'temp') {
+      range = 0;
+      thread = 1;
+    }
     return {
       location,
       settings,
@@ -149,24 +150,20 @@ export default {
       thread,
       max_range,
       mode: this.$parent.mode,
-      status: '',
       sockets: new Array(thread),
       radarTask: null,
       searching: false,
       map: {},
-      debug: false,
       clickMarker: null, // 点击位置标记
       userMarker: null, // 用户位置标记
       searchBoxMarker: [], //大范围搜索框标记
       searchBoxWideSet: new Set(), //大范围搜索集合
       searchOutboxMarker: null, //外围指引框标记
-      firstTime: true, // 首次连接socket标记
       currVersion: CUR_YAOLING_VERSION, //190508版本的json 如果有变动手动更新
-      statusOK: false,
       yaolings: tempdata.Data,
       upYaolings: activities.Data,
-      markers: [],
-      messageMap: new Map(), // 缓存请求和id
+      markers: new Map(), //妖灵markerclass
+      messageMap: new Map(), // 缓存请求类型和id
       botMode: false,
       botInterval: null,
       botTime: 0,
@@ -216,15 +213,6 @@ export default {
         .catch(b => {});
     }
 
-    this.addStatus(`捉妖雷达Web版 <br/>
-      版本:${APP_VERSION} <br/>
-      更新日志:<br/>
-      加入新版本活动妖灵<br/>`);
-
-    this.$on('botSetup', params => {
-      this.botSetup(params);
-    });
-
     if (this.mode === 'wide') {
       this.notify(
         `大范围搜索开启，当前最大搜索单位:${Math.pow(
@@ -251,7 +239,6 @@ export default {
       //     console.log("3");
       // }
       // console.log("2");
-      this.statusOK = true;
     },
     /**
      * 根据查询结果过滤数据，打标记
@@ -268,17 +255,11 @@ export default {
         });
       }
     },
-    addStatusWithoutNewline: function(str) {
-      this.status += str;
-    },
-    addStatus: function(str) {
-      this.status += str + '<br>';
-    },
     /**
      * 获取妖灵数据
      */
     getYaolingInfo: function() {
-      if (!this.statusOK || this.botMode) return;
+      if (this.botMode) return;
 
       // 先清除标记
       this.clearAllMarkers();
@@ -307,7 +288,7 @@ export default {
         });
 
         
-        this.progressShow = true;
+        if(this.mode === 'wide') this.progressShow = true;
         this.lng_count = this.lat_count = 0;
         this.searching = true;
         for (let index = 0; index < WIDE_SEARCH.MAX_SOCKETS; index++) {
@@ -322,10 +303,9 @@ export default {
      * 获取擂台数据
      */
     getLeitaiInfo: function() {
-      this.addStatus('功能开发中!');
       this.notify('功能开发中!');
       return;
-      if (!this.statusOK || this.botMode) return;
+      if (this.botMode) return;
       this.sendMessage(this.initSocketMessage('1001'));
     },
     /**

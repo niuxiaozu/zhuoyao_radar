@@ -14,13 +14,16 @@ module.exports = {
     initSockets() {
       // MAX_SOCKETS: this.$parent.mode === 'normal' ? 1 : WIDE_SEARCH.MAX_SOCKETS,
 
-      let max = this.mode === 'normal' ? 1 : this.thread;
+      //let max = this.mode === 'normal' ? 1 : this.thread;
+      let max = this.thread;
+      let maxTimeout = this.mode === 'temp' ? 1000 : 3000;
       for (let index = 0; index < max; index++) {
         let socket = new RadarWebSocket({
           url: SOCKET.URL,
           maxReconnectTime: SOCKET.MAX_RECONNECT_TIME,
           reconnectTimeout: SOCKET.RECONNECT_TIMEOUT,
           index: index,
+          maxTimeout: maxTimeout,
           onopen: this.onSocketOpen,
           onmessage: this.onSocketMessage,
           onclose: this.onSocketClose
@@ -34,10 +37,6 @@ module.exports = {
     sendMessage: function(message, socket) {
       console.log('sendMessage', message, socket);
 
-      if (message.request_type != '1004') {
-        this.addStatusWithoutNewline('WSS发送消息：');
-        this.addStatus(JSON.stringify(message));
-      }
       let _socket = socket || this.sockets[0];
       if (_socket) {
         _socket.send(json2buffer(message));
@@ -56,15 +55,14 @@ module.exports = {
      * socket开启连接回调
      */
     onSocketOpen: function(event, socket) {
-      this.addStatus(`WSS-${socket.index}.连接开启`);
       console.log(`WSS-${socket.index}.连接开启`);
       this.sockets[socket.index] = socket;
-      // 首次连接
-      if (this.firstTime) {
-        this.firstTime = false;
-        this.getSettingFileName();
-        this.getBossLevelConfig();
-      }
+      // 首次连接 不再浪费这次请求，以后手动筛查版本
+      // if (this.firstTime) {
+      //   this.firstTime = false;
+      //   this.getSettingFileName();
+      //   this.getBossLevelConfig();
+      // }
       if (this.searching) {
         // 断线重连时，继续任务
         this.startTaskWithSocket(socket);
@@ -124,7 +122,7 @@ module.exports = {
           this.handleMessage(data, socket);
         };
         fileReader.readAsArrayBuffer(blob);
-      }
+      } 
     },
     /**
      * 根据messageType构建socket消息
